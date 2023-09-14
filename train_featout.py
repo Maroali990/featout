@@ -11,13 +11,12 @@ import torchvision.transforms as transforms
 
 from models.food101_model import Net
 from featout.featout_dataset import Featout
-from featout.utils.blur import blur_around_max, zero_out
+from featout.utils.blur import blur_around_max, zero_out, adaptive_blur, invert_feature, texture_shuffle
 from featout.interpret import simple_gradient_saliency
 
 
 # method how to remove features - here by default blurring
-BLUR_METHOD = blur_around_max
-# BLUR_METHOD = zero_out
+BLUR_METHOD = invert_feature
 # algorithm to derive the model's attention
 ATTENTION_ALGORITHM = simple_gradient_saliency
 # set this path to some folder, e.g., "outputs", if you want to plot the results
@@ -90,12 +89,12 @@ for epoch in range(10):
     # START FEATOUT
     # first epoch uses unmodified dataset, then we do it every epoch
     # code could be changed to do it only every second epoch or so
-    if epoch > 0:
-        trainloader.dataset.start_featout(
-            net,
-            blur_method=BLUR_METHOD,
-            algorithm=ATTENTION_ALGORITHM,
-        )
+    # if epoch > 0:
+    trainloader.dataset.start_featout(
+        net,
+        blur_method=BLUR_METHOD,
+        algorithm=ATTENTION_ALGORITHM,
+    )
 
     for i, data in enumerate(trainloader):
         # get the inputs
