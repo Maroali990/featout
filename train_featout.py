@@ -43,6 +43,11 @@ transform = transforms.Compose([
 # Initialize the ImageFolder dataset
 full_dataset = ImageFolder(FOOD101_PATH, transform=transform)
 
+
+# Let's say target_classes contains your target class names
+target_classes = ['apple_pie', 'baby_back_ribs']  # Replace with your classes
+target_indices = []
+
 # Collect the indices of samples belonging to target classes
 for idx, (path, class_idx) in enumerate(full_dataset.imgs):
     if full_dataset.classes[class_idx] in target_classes:
@@ -50,6 +55,15 @@ for idx, (path, class_idx) in enumerate(full_dataset.imgs):
 
 # Create a Subset of the dataset only containing the target classes
 target_dataset = Subset(full_dataset, target_indices)
+
+# Create a mapping from old class index to new class index (0 and 1)
+class_mapping = {full_dataset.class_to_idx[original_class]: new_class for new_class, original_class in enumerate(target_classes)}
+
+# Modify the labels in target_dataset
+for idx in range(len(target_dataset)):
+    path, class_idx = target_dataset.dataset.imgs[target_dataset.indices[idx]]
+    new_class_idx = class_mapping[class_idx]
+    target_dataset.dataset.imgs[target_dataset.indices[idx]] = (path, new_class_idx)
 
 # Use train_test_split to get train and test indices
 train_idx, test_idx = train_test_split(target_indices, test_size=0.2, shuffle=True)
@@ -95,26 +109,12 @@ for epoch in range(10):
         inputs, labels = data
         # Create a mapping from the original class indices to 0 and 1
 
-        # This will give you a dictionary mapping class names to their original indices
-        class_to_idx = full_dataset.class_to_idx
-
-        # Find the original indices for "pizza" and "spaghetti_carbonara"
-        original_idx_pizza = class_to_idx["pizza"]
-        original_idx_spaghetti = class_to_idx["spaghetti_carbonara"]
-
-        # Create a mapping from the original indices to 0 and 1
-        old_to_new = {original_idx_pizza: 0, original_idx_spaghetti: 1}
-
-        # Inside your training loop, where you get 'labels' in each batch
-        new_labels = torch.tensor([old_to_new[label.item()] for label in labels])
-
-
         optimizer.zero_grad()
 
         # forward + backward + optimize
         outputs = net(inputs)
 
-        loss = criterion(outputs, new_labels)
+        loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
 
