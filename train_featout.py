@@ -16,8 +16,8 @@ from featout.interpret import simple_gradient_saliency
 
 
 # method how to remove features - here by default blurring
-# BLUR_METHOD = blur_around_max
-BLUR_METHOD = zero_out
+BLUR_METHOD = blur_around_max
+# BLUR_METHOD = zero_out
 # algorithm to derive the model's attention
 ATTENTION_ALGORITHM = simple_gradient_saliency
 # set this path to some folder, e.g., "outputs", if you want to plot the results
@@ -29,8 +29,7 @@ if PLOTTING_PATH is not None:
 FOOD101_PATH = "food-101/images"
 
 # The classes you're interested in
-target_classes = ["pizza", "spaghetti_carbonara"]
-
+target_classes = ["greek_salad", "beet_salad"]
 # Initialize an empty list to collect the indices of target classes
 target_indices = []
 
@@ -43,7 +42,6 @@ transform = transforms.Compose([
 # Initialize the ImageFolder dataset
 full_dataset = ImageFolder(FOOD101_PATH, transform=transform)
 
-target_classes = ['apple_pie', 'baby_back_ribs']
 target_indices = []
 
 # Collect the indices of samples belonging to target classes
@@ -92,12 +90,12 @@ for epoch in range(10):
     # START FEATOUT
     # first epoch uses unmodified dataset, then we do it every epoch
     # code could be changed to do it only every second epoch or so
-    if epoch > 0:
-        trainloader.dataset.start_featout(
-            net,
-            blur_method=BLUR_METHOD,
-            algorithm=ATTENTION_ALGORITHM,
-        )
+    # if epoch > 0:
+    #     trainloader.dataset.start_featout(
+    #         net,
+    #         blur_method=BLUR_METHOD,
+    #         algorithm=ATTENTION_ALGORITHM,
+    #     )
 
     for i, data in enumerate(trainloader):
         # get the inputs
