@@ -4,3 +4,4 @@ matplotlib
 torchvision
 captum
 scipy
+scikit-learn
