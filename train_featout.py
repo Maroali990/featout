@@ -43,9 +43,7 @@ transform = transforms.Compose([
 # Initialize the ImageFolder dataset
 full_dataset = ImageFolder(FOOD101_PATH, transform=transform)
 
-
-# Let's say target_classes contains your target class names
-target_classes = ['apple_pie', 'baby_back_ribs']  # Replace with your classes
+target_classes = ['apple_pie', 'baby_back_ribs']
 target_indices = []
 
 # Collect the indices of samples belonging to target classes
@@ -67,8 +65,6 @@ for idx in range(len(target_dataset)):
 
 # Use train_test_split to get train and test indices
 train_idx, test_idx = train_test_split(target_indices, test_size=0.2, shuffle=True)
-
-
 
 # Create train and test Subsets
 train_dataset = Subset(full_dataset, train_idx)
@@ -96,33 +92,27 @@ for epoch in range(10):
     # START FEATOUT
     # first epoch uses unmodified dataset, then we do it every epoch
     # code could be changed to do it only every second epoch or so
-
-    # if epoch > 0:
-    #     trainloader.dataset.start_featout(
-    #         net,
-    #         blur_method=BLUR_METHOD,
-    #         algorithm=ATTENTION_ALGORITHM,
-    #     )
+    if epoch > 0:
+        trainloader.dataset.start_featout(
+            net,
+            blur_method=BLUR_METHOD,
+            algorithm=ATTENTION_ALGORITHM,
+        )
 
     for i, data in enumerate(trainloader):
         # get the inputs
         inputs, labels = data
-        # Create a mapping from the original class indices to 0 and 1
-
         optimizer.zero_grad()
-
         # forward + backward + optimize
         outputs = net(inputs)
-
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
 
-
         # print statistics
         running_loss += loss.item()
         if (
-            i % 2000 == 1999
+            i % 200 == 199
         ):  # print every 2000 mini-batches
             print(
                 "Epoch %d, samples %5d] loss: %.3f"
