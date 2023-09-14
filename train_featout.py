@@ -90,12 +90,12 @@ for epoch in range(10):
     # START FEATOUT
     # first epoch uses unmodified dataset, then we do it every epoch
     # code could be changed to do it only every second epoch or so
-    # if epoch > 0:
-    #     trainloader.dataset.start_featout(
-    #         net,
-    #         blur_method=BLUR_METHOD,
-    #         algorithm=ATTENTION_ALGORITHM,
-    #     )
+    if epoch > 0:
+        trainloader.dataset.start_featout(
+            net,
+            blur_method=BLUR_METHOD,
+            algorithm=ATTENTION_ALGORITHM,
+        )
 
     for i, data in enumerate(trainloader):
         # get the inputs
