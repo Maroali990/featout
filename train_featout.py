@@ -1,21 +1,23 @@
 import os
 import time
-import numpy as np
 
 import torch
 import torch.nn as nn
-import torchvision
-import torchvision.transforms as transforms
 import torch.optim as optim
+from sklearn.model_selection import train_test_split
+from torchvision.datasets import ImageFolder
+from torch.utils.data import Subset
+import torchvision.transforms as transforms
 
-from models.mnist_model import Net
+from models.food101_model import Net
 from featout.featout_dataset import Featout
-from featout.utils.blur import blur_around_max
+from featout.utils.blur import blur_around_max, zero_out
 from featout.interpret import simple_gradient_saliency
 
-DATASET = torchvision.datasets.MNIST  # CIFAR10
+
 # method how to remove features - here by default blurring
-BLUR_METHOD = blur_around_max
+# BLUR_METHOD = blur_around_max
+BLUR_METHOD = zero_out
 # algorithm to derive the model's attention
 ATTENTION_ALGORITHM = simple_gradient_saliency
 # set this path to some folder, e.g., "outputs", if you want to plot the results
@@ -23,40 +25,47 @@ PLOTTING_PATH = None
 if PLOTTING_PATH is not None:
     os.makedirs(PLOTTING_PATH, exist_ok=True)
 
-# augmentation
-transform = transforms.Compose(
-    [
-        transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,))
-        # for cifar: (0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    ]
-)
+# Point this path to your food-101 dataset directory
+FOOD101_PATH = "food-101/images"
 
-# load the original dataset (it's downloaded automatically if not found)
-original_trainset = DATASET(
-    root="./data",
-    train=True,
-    download=True,
-    transform=transform,
-)
-# wrap the dataset with featout
-trainset = Featout(original_trainset, PLOTTING_PATH)
+# The classes you're interested in
+target_classes = ["pizza", "spaghetti_carbonara"]
 
-# the trainloader handles batching of the training set
-trainloader = torch.utils.data.DataLoader(
-    trainset, batch_size=4, shuffle=True, num_workers=0
-)
-# for the test data, we don't need any transformations, so we take the original
-# dataset and put it into the dataloader (without shuffling)
-testset = DATASET(
-    root="./data",
-    train=False,
-    download=True,
-    transform=transform,
-)
-testloader = torch.utils.data.DataLoader(
-    testset, batch_size=4, shuffle=False, num_workers=0
-)
+# Initialize an empty list to collect the indices of target classes
+target_indices = []
+
+transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+])
+
+# Initialize the ImageFolder dataset
+full_dataset = ImageFolder(FOOD101_PATH, transform=transform)
+
+# Collect the indices of samples belonging to target classes
+for idx, (path, class_idx) in enumerate(full_dataset.imgs):
+    if full_dataset.classes[class_idx] in target_classes:
+        target_indices.append(idx)
+
+# Create a Subset of the dataset only containing the target classes
+target_dataset = Subset(full_dataset, target_indices)
+
+# Use train_test_split to get train and test indices
+train_idx, test_idx = train_test_split(target_indices, test_size=0.2, shuffle=True)
+
+
+
+# Create train and test Subsets
+train_dataset = Subset(full_dataset, train_idx)
+test_dataset = Subset(full_dataset, test_idx)
+
+# Wrap the train dataset with Featout
+train_dataset = Featout(train_dataset, PLOTTING_PATH)
+
+# Update your DataLoader
+trainloader = torch.utils.data.DataLoader(train_dataset, batch_size=4, shuffle=True)
+testloader = torch.utils.data.DataLoader(test_dataset, batch_size=4, shuffle=False)
 
 # define model and optimizer (standard mnist model from torch is used)
 net = Net()
@@ -73,24 +82,42 @@ for epoch in range(10):
     # START FEATOUT
     # first epoch uses unmodified dataset, then we do it every epoch
     # code could be changed to do it only every second epoch or so
-    if epoch > 0:
-        trainloader.dataset.start_featout(
-            net,
-            blur_method=BLUR_METHOD,
-            algorithm=ATTENTION_ALGORITHM,
-        )
+
+    # if epoch > 0:
+    #     trainloader.dataset.start_featout(
+    #         net,
+    #         blur_method=BLUR_METHOD,
+    #         algorithm=ATTENTION_ALGORITHM,
+    #     )
 
     for i, data in enumerate(trainloader):
         # get the inputs
         inputs, labels = data
-        # zero the parameter gradients
+        # Create a mapping from the original class indices to 0 and 1
+
+        # This will give you a dictionary mapping class names to their original indices
+        class_to_idx = full_dataset.class_to_idx
+
+        # Find the original indices for "pizza" and "spaghetti_carbonara"
+        original_idx_pizza = class_to_idx["pizza"]
+        original_idx_spaghetti = class_to_idx["spaghetti_carbonara"]
+
+        # Create a mapping from the original indices to 0 and 1
+        old_to_new = {original_idx_pizza: 0, original_idx_spaghetti: 1}
+
+        # Inside your training loop, where you get 'labels' in each batch
+        new_labels = torch.tensor([old_to_new[label.item()] for label in labels])
+
+
         optimizer.zero_grad()
 
         # forward + backward + optimize
         outputs = net(inputs)
-        loss = criterion(outputs, labels)
+
+        loss = criterion(outputs, new_labels)
         loss.backward()
         optimizer.step()
+
 
         # print statistics
         running_loss += loss.item()
