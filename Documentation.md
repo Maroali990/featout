@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document records a brief experimental investigation we conducted over a few hours to evaluate the featout method's influence on image classification tasks. Due to resource constraints and time limitations, our exploration was brief and primarily focused on the QuickDraw and Food-101 datasets. It is important to note that this was a quick and limited-scope experiment; the findings are initial observations.
+This document records a brief experimental investigation we conducted over a few hours to evaluate the featout method's influence on image classification tasks. Due to resource constraints and time limitations, our exploration was brief and primarily focused on the QuickDraw and Food-101 datasets. It is important to note that this was a quick and limited-scope experiment; the findings are initial observations. We edited the requirements.txt, so make sure to install the missing dependencies.
 
 ## Experimental Setup
 
